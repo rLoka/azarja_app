@@ -59,56 +59,125 @@ class MyAppState extends ChangeNotifier {
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  // This class extends State, and can therefore manage its own values.
+  // (It can change itself.)
+  var selectedIndex = 0;
+
   // Every widget defines a build() method
-  // that's automatically called every time the widget's circumstances change
-  // so that the widget is always up to date.
-
-  IconData generateLikeIcon(MyAppState myAppState) {
-    if (myAppState.favourites.contains(myAppState.current)) {
-      return Icons.favorite;
-    }
-    return Icons.favorite_border_outlined;
-  }
-
   @override
   Widget build(BuildContext context) {
     // MyHomePage tracks changes to the app's current state using the watch method
+    Widget page;
+    switch (selectedIndex) {
+      case 0:
+        page = GeneratorPage();
+        break;
+      case 1:
+        page = FavoritesPage();
+        break;
+      default:
+        throw UnimplementedError("No widget for selected index");
+    }
+
+    return LayoutBuilder(builder: (context, constraints) {
+      return Scaffold(
+        // Every build method must return a widget or (more typically) a nested tree of widgets
+        // Scaffold is a helpful widget and is found in the vast majority of real-world Flutter apps.
+        // The new MyHomePage contains a Row with two children.
+        // The first widget is SafeArea, and the second is an Expanded widget.
+        body: Row(
+          children: [
+            // The SafeArea ensures that its child is not obscured by a hardware
+            // notch or a status bar. In this app, the widget wraps around
+            // NavigationRail to prevent the navigation buttons from being
+            // obscured by a mobile status bar, for example.
+            SafeArea(
+              child: NavigationRail(
+                // When enabled, extended shows the labels next to the icons
+                extended: constraints.maxWidth >= 1000,
+                destinations: [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.home),
+                    label: Text('Home'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.favorite),
+                    label: Text('Favorites'),
+                  ),
+                ],
+                // A selected index of zero selects the first destination
+                selectedIndex: selectedIndex,
+                // defines what happens when the user selects one of the destinations
+                onDestinationSelected: (value) {
+                  // setState() is similar to the notifyListeners() method used
+                  // previously—it makes sure that the UI updates.
+                  setState(() {
+                    selectedIndex = value;
+                  });
+                },
+              ),
+            ),
+            // Expanded widgets are extremely useful in rows and columns—they let
+            // you express layouts where some children take only as much space
+            // as they need (we can call them greedy)
+            Expanded(
+              child: Container(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: page,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class GeneratorPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
     var pair = appState.current;
 
-    // Every build method must return a widget or (more typically) a nested tree of widgets
-    // Scaffold is a helpful widget and is found in the vast majority of real-world Flutter apps.
-    return Scaffold(
-      // Wrapping a column widget centers it inside a scaffold
-      // center may be used to center any widget for that purpose
-      body: Center(
-        child: Column(
-          // mainAxisAlignment centers the content inside a column
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            BigCard(pair: pair),
-            SizedBox(
-              height: 10,
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ElevatedButton.icon(
-                    onPressed: () {
-                      appState.toggleFavourite();
-                    },
-                    icon: Icon(generateLikeIcon(appState)),
-                    label: Text("Like")),
-                ElevatedButton(
-                    onPressed: () {
-                      appState.getNext();
-                    },
-                    child: Text("Next")),
-              ],
-            )
-          ],
-        ),
+    IconData icon;
+    if (appState.favourites.contains(pair)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          BigCard(pair: pair),
+          SizedBox(height: 10),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  appState.toggleFavourite();
+                },
+                icon: Icon(icon),
+                label: Text('Like'),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  appState.getNext();
+                },
+                child: Text('Next'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -162,3 +231,38 @@ class BigCard extends StatelessWidget {
     );
   }
 }
+
+class FavoritesPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
+    /* return Center(
+        child: ListView.builder(
+            itemCount: appState.favourites.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                  title: Text(appState.favourites[index].asLowerCase));
+            }));
+    */
+    return ListView(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text('You have '
+              '${appState.favourites.length} favorites:'),
+        ),
+        // Dart allows using for loops inside collection literals.
+        for (var pair in appState.favourites)
+          ListTile(
+            leading: Icon(Icons.favorite),
+            title: Text(pair.asLowerCase),
+          ),
+      ],
+    );
+  }
+}
+
+// Next:
+// https://codelabs.developers.google.com/codelabs/flutter-codelab-first#8
+// https://flutter.dev/learn
