@@ -20,3 +20,7 @@ samples, guidance on mobile development, and a full API reference.
 For debugging and running on Chrome
 
 flutter run -d chrome --release
+
+## Installing Dependencies
+
+flutter pub get
